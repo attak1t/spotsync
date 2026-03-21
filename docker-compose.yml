@@ -5,7 +5,7 @@ services:
       - "8222:8222"
     volumes:
       - ./data:/data          # SQLite + session store
-      - ./music:/music        # shared music library (change to /storage/media/Music for production)
+      - /storage/media/Chris/Music:/music
     env_file: .env
     depends_on:
       - redis
@@ -16,7 +16,7 @@ services:
     build: .
     volumes:
       - ./data:/data
-      - ./music:/music        # shared music library (change to /storage/media/Music for production)
+      - /storage/media/Chris/Music:/music
     env_file: .env
     depends_on:
       - redis

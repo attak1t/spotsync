@@ -98,6 +98,67 @@ def parse_audio_metadata(file_path):
         logger.warning(f"Failed to parse audio metadata for {file_path}: {e}")
         return None
 
+# Quality ranking for audio formats — higher number = better quality
+FORMAT_QUALITY: dict[str, int] = {
+    "flac": 100,
+    "wav":  90,
+    "m4a":  70,
+    "aac":  70,
+    "ogg":  60,
+    "opus": 60,
+    "mp3":  50,
+}
+
+def find_existing_higher_quality(artist: str, album: str, title: str, target_format: str) -> str | None:
+    """Return the path of an existing file in /music whose quality is >= target_format
+    and whose title matches the given track, or None if no such file is found.
+
+    Search strategy:
+      1. Locate an artist subdirectory under /music (case-insensitive, normalised).
+      2. Walk that subtree looking for audio files whose stem matches the track title.
+      3. Fall back to a full /music scan only when artist info is unavailable.
+    """
+    import re
+
+    def normalize(s: str) -> str:
+        """Strip everything except lowercase alphanumerics for fuzzy matching."""
+        return re.sub(r"[^a-z0-9]", "", s.lower()) if s else ""
+
+    target_quality = FORMAT_QUALITY.get(target_format.lower(), 0)
+    norm_title = normalize(title)
+    if not norm_title:
+        return None
+
+    music_base = Path("/music")
+    if not music_base.exists():
+        return None
+
+    # Determine the root to walk — prefer the artist subfolder for speed
+    search_root = music_base
+    if artist:
+        norm_artist = normalize(artist)
+        try:
+            for entry in music_base.iterdir():
+                if entry.is_dir() and normalize(entry.name) == norm_artist:
+                    search_root = entry
+                    break
+        except OSError:
+            pass
+
+    for root, _dirs, files in os.walk(str(search_root)):
+        for fname in files:
+            p = Path(fname)
+            ext = p.suffix.lstrip(".").lower()
+            if ext not in FORMAT_QUALITY:
+                continue
+            if normalize(p.stem) == norm_title:
+                existing_quality = FORMAT_QUALITY.get(ext, 0)
+                if existing_quality >= target_quality:
+                    return os.path.join(root, fname)
+
+    return None
+
+
 # Ensure database tables exist before processing tasks
 create_tables()
 
@@ -354,6 +415,33 @@ def download_track(self, track_id: str):
                 raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
 
         # For single tracks, use the original logic
+
+        # ── Quality guard ────────────────────────────────────────────────────
+        # Before invoking spotdl, check whether a file of equal or higher
+        # quality already exists in the library (e.g. a FLAC that Lidarr
+        # imported).  If one is found we skip the download entirely so we
+        # never overwrite a better copy — even when the track arrives as part
+        # of a playlist or album job.
+        if track.title and track.artist:
+            existing = find_existing_higher_quality(
+                track.artist,
+                track.album or "",
+                track.title,
+                settings.SPOTDL_FORMAT,
+            )
+            if existing:
+                logger.info(
+                    f"Skipping download for '{track.title}' — higher/equal quality "
+                    f"file already exists: {existing}"
+                )
+                track.status = "done"
+                track.file_path = existing
+                db.commit()
+                emit_ws(job.id, track.id, "done", 100)
+                check_job_completion.delay(job.id)
+                return
+        # ─────────────────────────────────────────────────────────────────────
+
         # Build spotdl command
         spotify_url = f"https://open.spotify.com/track/{track.spotify_id}"
         output_template = settings.SPOTDL_OUTPUT
