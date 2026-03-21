@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpotSync - Self-hosted Spotify Downloader</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen">
+            <div class="login-container">
+                <h1><i class="fas fa-music"></i> SpotSync</h1>
+                <div class="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" value="admin" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter admin password">
+                    </div>
+                    <button id="login-btn" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Dashboard Screen (hidden by default) -->
+        <div id="dashboard-screen" class="screen hidden">
+            <header class="dashboard-header">
+                <h1><i class="fas fa-music"></i> SpotSync Dashboard</h1>
+                <button id="logout-btn" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </header>
+
+            <main class="dashboard-main">
+                <!-- New Job Section -->
+                <section class="card new-job-section">
+                    <h2><i class="fas fa-plus-circle"></i> New Download</h2>
+                    <div class="form-group">
+                        <label for="spotify-url">Spotify URL</label>
+                        <input type="text" id="spotify-url" placeholder="https://open.spotify.com/playlist/...">
+                        <p class="help-text">Paste a Spotify URL (track, playlist, or album)</p>
+                    </div>
+                    <button id="submit-job-btn" class="btn btn-primary">
+                        <i class="fas fa-cloud-download-alt"></i> Start Download
+                    </button>
+                </section>
+
+                <!-- Active Jobs Section -->
+                <section class="card jobs-section">
+                    <h2><i class="fas fa-sync fa-spin"></i> Active Jobs</h2>
+                    <div id="active-jobs-list" class="jobs-list">
+                        <div class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <p>No active jobs</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recent Jobs Section -->
+                <section class="card jobs-section">
+                    <h2><i class="fas fa-history"></i> Recent Jobs</h2>
+                    <div id="recent-jobs-list" class="jobs-list">
+                        <div class="empty-state">
+                            <i class="fas fa-music"></i>
+                            <p>No recent jobs</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Terminal View Section -->
+                <section class="card terminal-section">
+                    <div class="terminal-header">
+                        <h2><i class="fas fa-terminal"></i> Terminal Output</h2>
+                        <div class="terminal-controls">
+                            <button id="clear-terminal-btn" class="btn btn-icon" title="Clear terminal">
+                                <i class="fas fa-broom"></i>
+                            </button>
+                            <button id="toggle-terminal-btn" class="btn btn-icon" title="Toggle auto-scroll">
+                                <i class="fas fa-arrow-down" id="auto-scroll-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="terminal-output" class="terminal-content">
+                        <div class="terminal-line">Terminal ready. Waiting for spotdl output...</div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Job Details Modal -->
+            <div id="job-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="modal-title">Job Details</h2>
+                        <button id="close-modal-btn" class="btn btn-icon">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="job-details"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container"></div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
