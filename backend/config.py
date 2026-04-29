@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change_this_to_a_random_string"
 
     # Database
-    DATABASE_URL: str = "sqlite:///./data/spotsync.db"
+    DATABASE_URL: str = "sqlite:////data/spotsync.db"
 
     class Config:
         env_file = ".env"
