@@ -57,7 +57,7 @@ Start SpotSync only (requires Docker):
 docker compose up -d api worker redis
 ```
 
-Access the web interface at `http://localhost:8080` (admin/your_password).
+Access the web interface at `http://localhost:8222` (admin/your_password).
 
 ### Server Deployment (with existing Lidarr/Syncthing)
 
@@ -79,7 +79,8 @@ For production deployment alongside existing services:
    - Optional: Spotify API credentials for metadata
 
 3. **Update volume mounts** in `docker-compose.yml`:
-   Change `./music:/music` to your music library path (e.g., `/storage/media/Music:/music`)
+   Change `/storage/media/Chris/Music:/music` to your music library path
+   and `./data:/data` to a persistent location for the SQLite database
 
 4. **Start services**:
    ```bash
@@ -91,7 +92,7 @@ For production deployment alongside existing services:
    - The folder ID in Syncthing should match `SYNCTHING_FOLDER_ID` (default: "music")
 
 6. **Access SpotSync**:
-   Open `http://your-server:8080` and login
+   Open `http://your-server:8222` and login
 
 ## Features
 
@@ -110,12 +111,18 @@ See `.env.example` for all available options. Key variables:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `LIDARR_API_KEY` | Lidarr API key | Yes |
-| `SYNCTHING_API_KEY` | Syncthing API key | Yes |
+| `DATABASE_URL` | SQLite database path (absolute path: `/data/spotsync.db`) | No |
+| `LIDARR_URL` | Lidarr server URL | No |
+| `LIDARR_API_KEY` | Lidarr API key | No (skip import if blank) |
+| `SYNCTHING_URL` | Syncthing server URL | No |
+| `SYNCTHING_API_KEY` | Syncthing API key | No (skip sync if blank) |
+| `SYNCTHING_FOLDER_ID` | Syncthing folder to rescan (default: "music") | No |
 | `SPOTIFY_CLIENT_ID` | Spotify API client ID | No (optional for metadata) |
 | `SPOTIFY_CLIENT_SECRET` | Spotify API client secret | No (optional for metadata) |
 | `ADMIN_PASSWORD` | Web interface password | Yes |
-| `SPOTDL_OUTPUT` | File output template | No |
+| `REDIS_URL` | Redis connection URL | No |
+| `SECRET_KEY` | Session secret key | Yes |
+| `SPOTDL_OUTPUT` | spotdl file output template | No |
 | `SPOTDL_FORMAT` | Audio format (mp3, flac, etc.) | No |
 | `SPOTDL_BITRATE` | Audio bitrate | No |
 
@@ -177,6 +184,9 @@ docker compose exec worker spotdl "https://open.spotify.com/track/..." --output 
 ```
 
 ## Known Issues & Solutions
+
+### SQLite "unable to open database file"
+The `DATABASE_URL` must use an absolute path (`sqlite:////data/spotsync.db`) matching the `/data` volume mount. The Docker image includes `mkdir -p /data` to ensure the directory exists. If you encounter this error, verify your `DATABASE_URL` is an absolute path and that the host `./data` directory is writable.
 
 ### spotdl Output Parsing
 spotdl's stdout format changes across versions. The current implementation uses a simple progress estimator. For better parsing, consider contributing a more robust parser.
